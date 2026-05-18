@@ -3,44 +3,63 @@ package main
 import (
 	"fmt"
 	"log/slog"
-	"net/http"
+	"os"
+	"path/filepath"
+	"runtime/debug"
+	"time"
 
-	urlshort "github.com/levi-20/url-shortner/urlshort"
+	"github.com/joho/godotenv"
+	server "github.com/levi-20/url-shortner/server"
+	"github.com/lmittmann/tint"
 )
 
-func main() {
-	mux := defaultMux()
-	slog.Info("mux", "mux", mux)
-	// Build the MapHandler using the mux as the fallback
-	pathsToUrls := map[string]string{
-		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
-		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
+func InitLogger(environment server.Environment) {
+	var handler slog.Handler
+	if environment == server.EnvironmentProduction {
+		slog.SetLogLoggerLevel(slog.LevelInfo)
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			AddSource: true,
+			Level:     slog.LevelDebug,
+		})
+	} else {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+		handler = tint.NewHandler(os.Stdout, &tint.Options{
+			AddSource:  true,
+			Level:      slog.LevelDebug,
+			TimeFormat: time.Kitchen,
+		})
 	}
-	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
-	// Build the YAMLHandler using the mapHandler as the
-	// fallback
-	yamlInput := `
-- path: /urlshort
-  url: https://github.com/gophercises/urlshort
-- path: /urlshort-final
-  url: https://github.com/gophercises/urlshort/tree/solution
-`
-	yamlHandler, err := urlshort.YAMLHandler([]byte(yamlInput), mapHandler)
+	slog.SetDefault(slog.New(handler))
+}
+
+func main() {
+
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("panic", "error", r, "stack", string(debug.Stack()))
+			time.Sleep(2 * time.Second)
+			panic(r)
+		}
+	}()
+
+	godotenv.Load()
+
+	server.GlobalServerConfig.Env = server.EnvironmentDebug
+	server.GlobalServerConfig.ListenPort = 8900
+
+	InitLogger(server.GlobalServerConfig.Env)
+
+	exec, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("Starting the server on :8080")
-	http.ListenAndServe(":8080", yamlHandler)
-}
+	server.GlobalServerConfig.ExecBaseDir = filepath.Dir(exec)
 
-func defaultMux() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", hello)
-	return mux
-}
+	listenAddr := fmt.Sprintf(":%d", server.GlobalServerConfig.ListenPort)
+	slog.Info(fmt.Sprintf("📦 Starting GIN server on %s", listenAddr))
+	app := server.NewApp(server.GlobalServerConfig)
 
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, world!")
+	server.StartGinServer(app, listenAddr)
 }
