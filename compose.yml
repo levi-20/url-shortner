@@ -1,0 +1,58 @@
+name: url-shortner
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: always
+    shm_size: 256m
+    ports:
+      - "5430:5432"
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --dbname=shortner --username url_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: url_admin
+      POSTGRES_PASSWORD: bestpassword
+      POSTGRES_DB: shortner
+
+  migrations:
+    build:
+      context: ./services/migration
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: url_admin
+      POSTGRES_PASSWORD: bestpassword
+      POSTGRES_DB: shortner
+
+  server:
+    build:
+      context: ./services/server
+      dockerfile: Dockerfile
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: url_admin
+      POSTGRES_PASSWORD: bestpassword
+      POSTGRES_DB: shortner
+    ports:
+      - "8900:8900"
+    volumes:
+      - ./services/server:/app
+    entrypoint: sh
+    command: |
+      -c "go install github.com/a-h/templ/cmd/templ@v0.3.977 && go install github.com/air-verse/air@v1.62.0 && cd /app && air -c .air.toml"
+
+volumes:
+  db_data:
+    name: short_db_data

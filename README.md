@@ -2,30 +2,39 @@
 
 Its a project I'm doing for fun this is to shorten the URLs
 
-## how to run
+## Setup
 
-### Windows
+1. Clone `git clone https://github.com/levi-20/url-shortner.git`
+2. `go mod tidy`
+3. Migration
+    Command `migrate create -ext sql -dir migration/db/migrations -seq create_url_tables`.
 
-1. Build `Build.bat`
-2. Debug `BuildAndDebug.bat`
-3. Build and Run `BuildAndRun.bat`
+    Generated file names
 
-### Linux
+    1. `00001_create_url_tables.up.sql`
+    2. `00001_create_url_tables.down.sql`
+4. Running
+    - Windows
+      1. Build `Build.bat`
+      2. Debug `BuildAndDebug.bat`
+      3. Build and Run `BuildAndRun.bat`
 
-`build.sh` contains all the commands can be used as per need
+    - Linux
 
-```sh
-#!/bin/bash
+    `build.sh` contains all the commands can be used as per need
 
-# -gcflags=all="-N -l" preserves debugging symbols (disables optimizations and inlining)
-# -o flag specifies the output path
+    ```sh
+    #!/bin/bash
 
-# Build
-# go build -o ./bin/release/main main.go
+    # -gcflags=all="-N -l" preserves debugging symbols (disables optimizations and inlining)
+    # -o flag specifies the output path
 
-# Build and Run
-# go build -o ./bin/release/main main.go && ./bin/release/main "$@"
+    # Build
+    # go build -o ./bin/release/main main.go
 
-# Build and Debug
-go build -gcflags="all=-N -l" -o ./bin/debug/main main.go
-```
+    # Build and Run
+    # go build -o ./bin/release/main main.go && ./bin/release/main "$@"
+
+    # Build and Debug
+    go build -gcflags="all=-N -l" -o ./bin/debug/main main.go
+    ```
