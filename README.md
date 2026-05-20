@@ -6,7 +6,7 @@ Its a project I'm doing for fun, this is to shorten the URLs
 
 Running
 ```bash
-docker compose build && docker compose up --wait`
+docker compose build && docker compose up --wait
 ```
 
 ## Migration

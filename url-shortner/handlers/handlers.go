@@ -5,9 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"log/slog"
-	"maps"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -30,8 +31,37 @@ func getUrlHash(URL string) string {
 }
 
 type NewAndExisting struct {
-	New     map[string]string `json:"new"`
-	Exising map[string]string `json:"existing"`
+	New     []db.ShortWithOriginal `json:"new"`
+	Exising []db.ShortWithOriginal `json:"existing"`
+}
+
+func formatResponse(existingUrls []db.ShortWithOriginal, newShortCodes []string, newOriginalURLs []string) *NewAndExisting {
+
+	base_url := os.Getenv("BASE_URL")
+
+	var response NewAndExisting
+	response.Exising = make([]db.ShortWithOriginal, 0, len(existingUrls))
+	response.New = make([]db.ShortWithOriginal, 0, len(newShortCodes))
+	if len(existingUrls) > 0 {
+
+		for _, urlObj := range existingUrls {
+			response.Exising = append(response.Exising, db.ShortWithOriginal{
+				Short: fmt.Sprintf("%s/%s", base_url, urlObj.Short),
+				Url:   urlObj.Url,
+			})
+		}
+	}
+
+	if len(newShortCodes) > 0 {
+
+		for i, code := range newShortCodes {
+			response.New = append(response.New, db.ShortWithOriginal{
+				Short: fmt.Sprintf("%s/%s", base_url, code),
+				Url:   newOriginalURLs[i],
+			})
+		}
+	}
+	return &response
 }
 
 func GenerateShortURL() string {
@@ -68,7 +98,6 @@ func CheckAndSaveURLs(ctx *gin.Context, pool *pgxpool.Pool, urls []string) (*New
 		if _, ok := existingURLs.Hashes[hash]; ok {
 			continue
 		}
-
 		realURL = append(realURL, url)
 		urlHashes = append(urlHashes, hash)
 		shortURL = append(shortURL, GenerateShortURL())
@@ -76,25 +105,16 @@ func CheckAndSaveURLs(ctx *gin.Context, pool *pgxpool.Pool, urls []string) (*New
 
 	slog.Info("URLs", "realURL", realURL, "shortURL", shortURL, "hashes", urlHashes)
 
-	var response NewAndExisting
-	response.Exising = make(map[string]string)
-	response.New = map[string]string{}
-
 	if len(shortURL) > 0 {
 		err = db.SaveURLs(ctx, pool, realURL, shortURL, urlHashes)
 		if err != nil {
 			slog.Error("error while saving the urls", "err", err.Error())
 			return nil, err
 		}
-		for i := 0; i < len(shortURL); i++ {
-			response.New[shortURL[i]] = realURL[i]
-		}
 	}
 
-	// Add existing URLs to response
-	maps.Copy(response.Exising, existingURLs.Urls)
-
-	return &response, nil
+	response := formatResponse(existingURLs.Urls, shortURL, realURL)
+	return response, nil
 }
 
 func ShortenUrls(ctx *gin.Context, pool *pgxpool.Pool) {

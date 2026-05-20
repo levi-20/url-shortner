@@ -47,8 +47,13 @@ func CreateDatabaseConnection() *pgxpool.Pool {
 	return connection
 }
 
+type ShortWithOriginal struct {
+	Short string `json:"short"`
+	Url   string `json:"url"`
+}
+
 type ExistingURLs struct {
-	Urls   map[string]string
+	Urls   []ShortWithOriginal
 	Hashes map[string]struct{}
 }
 
@@ -68,19 +73,19 @@ func CheckExistingURLs(ctx *gin.Context, pool *pgxpool.Pool, hashes []string) (*
 	}
 
 	var existingUrls ExistingURLs
-	existingUrls.Urls = map[string]string{}
+	existingUrls.Urls = make([]ShortWithOriginal, 0, len(hashes))
 	existingUrls.Hashes = map[string]struct{}{}
-	var hash, code, url string
+	var hash string
 
 	for rows.Next() {
-
-		err := rows.Scan(&code, &hash, &url)
+		var shortWithOriginal ShortWithOriginal
+		err := rows.Scan(&shortWithOriginal.Short, &hash, &shortWithOriginal.Url)
 		if err != nil {
 			slog.Error("error while scanning existing urls", "error", err.Error())
 			return nil, err
 		}
 
-		existingUrls.Urls[code] = url
+		existingUrls.Urls = append(existingUrls.Urls, shortWithOriginal)
 		existingUrls.Hashes[hash] = struct{}{}
 
 	}
