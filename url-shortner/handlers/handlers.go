@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"log/slog"
+	"maps"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -91,9 +92,7 @@ func CheckAndSaveURLs(ctx *gin.Context, pool *pgxpool.Pool, urls []string) (*New
 	}
 
 	// Add existing URLs to response
-	for key, value := range existingURLs.Urls {
-		response.Exising[key] = value
-	}
+	maps.Copy(response.Exising, existingURLs.Urls)
 
 	return &response, nil
 }

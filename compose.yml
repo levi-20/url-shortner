@@ -20,7 +20,7 @@ services:
 
   migrations:
     build:
-      context: ./services/migration
+      context: ./migration
       dockerfile: Dockerfile
     depends_on:
       postgres:
@@ -34,7 +34,7 @@ services:
 
   server:
     build:
-      context: ./services/server
+      context: ./url-shortner
       dockerfile: Dockerfile
     depends_on:
       migrations:
@@ -48,7 +48,7 @@ services:
     ports:
       - "8900:8900"
     volumes:
-      - ./services/server:/app
+      - ./url-shortner:/app
     entrypoint: sh
     command: |
       -c "go install github.com/a-h/templ/cmd/templ@v0.3.977 && go install github.com/air-verse/air@v1.62.0 && cd /app && air -c .air.toml"
