@@ -4,5 +4,19 @@ Its a project I'm doing for fun, this is to shorten the URLs
 
 ## Setup
 
-1. Clone `git clone https://github.com/levi-20/url-shortner.git`
-2. Run `docker compose build && docker compose up --wait`
+Running
+```bash
+docker compose build && docker compose up --wait`
+```
+
+## Migration
+Creattin new migration
+
+```bash
+  migrate create -ext sql -dir services/migration/db/migrations -seq <migration name>
+```
+Forcing specific version
+    
+```bash
+  migrate -path services/migration/db/migrations -database "postgres://<user>:<password>@localhost:5430/shortner sslmode=disable" force <version>
+```

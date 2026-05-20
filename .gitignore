@@ -15,3 +15,6 @@
 
 # Env file
 .env
+
+# air temp 
+tmp

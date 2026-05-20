@@ -2,7 +2,6 @@ package server
 
 import (
 	"log/slog"
-	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -51,13 +50,11 @@ func StartGinServer(app *App, addr string) {
 	// router.Use(CORSMiddleware())
 
 	router.POST("/generate", func(ctx *gin.Context) {
+		handlers.ShortenUrls(ctx, app.DatabasePool)
+	})
 
-		urls, err := handlers.ShortenUrls(ctx, app.DatabasePool)
-		if err != nil {
-			ctx.AbortWithStatus(http.StatusInternalServerError)
-		}
-
-		ctx.JSON(http.StatusOK, urls)
+	router.GET("/:slug", func(ctx *gin.Context) {
+		handlers.RedirectUrl(ctx, app.DatabasePool)
 	})
 
 	if err := router.Run(addr); err != nil {

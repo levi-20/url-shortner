@@ -48,5 +48,5 @@ func main() {
 		os.Exit(-3)
 	}
 
-	slog.Info("Migrations applied successfully!")
+	slog.Info("📦 Migrations applied successfully!")
 }

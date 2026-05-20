@@ -1,0 +1,4 @@
+ALTER TABLE redirection ALTER COLUMN code TYPE CHAR(7);
+ALTER TABLE redirection ALTER COLUMN url_hash TYPE CHAR(64);
+
+ALTER TABLE metadata ALTER COLUMN code TYPE CHAR(7);
